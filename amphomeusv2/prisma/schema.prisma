@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Journal entries - global access, no user ownership
+model Journal {
+  id              String    @id @default(uuid())
+  title           String
+  content         String?   @db.Text
+  date            DateTime  @default(now())
+  location        String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  media           Media[]
+  tags            Tag[]     @relation("JournalToTag")
+}
+
+// Media files (images or videos) that are attached to journals
+model Media {
+  id              String    @id @default(uuid())
+  url             String    // Cloudinary URL
+  publicId        String    // Cloudinary public ID for management
+  mediaType       MediaType
+  caption         String?
+  width           Int?
+  height          Int?
+  createdAt       DateTime  @default(now())
+  
+  // Relations
+  journalId       String
+  journal         Journal   @relation(fields: [journalId], references: [id], onDelete: Cascade)
+  
+  @@index([journalId])
+}
+
+// Enum for media types
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+// Tags for categorizing journal entries
+model Tag {
+  id              String    @id @default(uuid())
+  name            String    @unique
+  createdAt       DateTime  @default(now())
+  
+  // Relations
+  journals        Journal[] @relation("JournalToTag")
+}
